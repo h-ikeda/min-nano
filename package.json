@@ -1,0 +1,21 @@
+{
+  "name": "min-nano",
+  "scripts": {
+    "start": "firebase emulators:exec --only=auth,firestore,storage parcel",
+    "build": "parcel build"
+  },
+  "devDependencies": {
+    "@material-design-icons/svg": "^0.14.4",
+    "@parcel/transformer-vue": "^2.8.2",
+    "buffer": "^5.7.1",
+    "firebase": "^9.17.1",
+    "heroicons": "^2.0.13",
+    "parcel": "^2.8.2",
+    "pdfjs-dist": "^3.6.172",
+    "process": "^0.11.10",
+    "tailwindcss": "^3.2.4",
+    "vue": "^3.2.45",
+    "vue-router": "^4.1.6"
+  },
+  "source": "src/index.html"
+}

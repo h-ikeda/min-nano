@@ -1,0 +1,8 @@
+/.devcontainer/
+/.parcel-cache
+node_modules/
+/dist/
+/tmp
+/ui-debug.log
+/firebase-debug.log
+/firestore-debug.log

@@ -1,0 +1,17 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /inspectionApplications/{applicationId}/{uuid}/{mediaType} {
+      function isApplicantAndNotSubmitted() {
+        let store = firestore.get(/databases/(default)/documents/inspectionApplications/$(applicationId));
+        return store != null && store.data.applicant == request.auth.uid && store.data.status != 'submitted';
+      }
+      function isApplicant() {
+        let store = firestore.get(/databases/(default)/documents/inspectionApplications/$(applicationId));
+        return store != null && store.data.applicant == request.auth.uid;
+      }
+      allow create: if isApplicantAndNotSubmitted();
+      allow read: if isApplicant();
+    }
+  }
+}

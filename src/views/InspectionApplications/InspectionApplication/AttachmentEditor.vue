@@ -1,6 +1,6 @@
 <template>
   <aside class="overflow-auto pb-3 bg-sky-100">
-    <nav class="flex items-center shadow bg-sky-200 sticky top-0">
+    <nav class="flex items-center shadow bg-sky-200 sticky top-0 z-10">
       <p class="grow mx-4 text-gray-900 font-light">
         {{ attachment.name }}
       </p>

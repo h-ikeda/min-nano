@@ -174,7 +174,7 @@ section>label>span {
   text-align-last: justify;
 }
 section>input {
-  @apply outline-none border-b border-gray-700 px-1.5 py-0.5 col-start-2 bg-slate-50 rounded-t;
+  @apply outline-none border-b border-gray-700 px-1.5 py-0.5 col-start-2 bg-slate-50;
 }
 section>input:focus {
   @apply border-b-2 shadow-inner;

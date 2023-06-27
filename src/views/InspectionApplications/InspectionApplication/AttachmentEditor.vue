@@ -1,6 +1,6 @@
 <template>
   <aside class="overflow-auto pb-3 bg-sky-100">
-    <nav class="flex items-center shadow bg-sky-200">
+    <nav class="flex items-center shadow bg-sky-200 sticky top-0">
       <p class="grow mx-4 text-gray-900 font-light">
         {{ attachment.name }}
       </p>
@@ -20,7 +20,7 @@
     <StorageLoader :path="attachment.original">
       <template #default="{ url }">
         <p class="mx-4">
-          <iframe :src="url" class="w-full aspect-square"/>
+          <iframe :src="`${url}#zoom=FitW`" class="w-full aspect-square"/>
         </p>
       </template>
       <template #fallback>

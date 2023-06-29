@@ -22,7 +22,7 @@ jobs:
           projectId: min-nano
       - uses: w9jds/firebase-action@master
         with: 
-          args: deploy --only firestore:rules,storage
+          args: deploy --only firestore:rules,storage,functions
         env:
           GCP_SA_KEY: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIN_NANO }}'
           PROJECT_ID: min-nano

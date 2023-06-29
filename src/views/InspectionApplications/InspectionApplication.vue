@@ -197,12 +197,10 @@ async function submit() {
   const mailDoc = doc(firestore, 'mail', applicationId.value);
   batch.set(mailDoc, {
     toUids: ['administrator'],
-    message: {
-      template: {
-        name: 'inspectionApplicationSubmitNotice',
-        data: {
-          applicantId: applicationId.value,
-        },
+    template: {
+      name: 'inspectionApplicationSubmitNotice',
+      data: {
+        applicantId: applicationId.value,
       },
     },
   });

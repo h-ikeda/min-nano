@@ -82,7 +82,7 @@
 <script setup>
 import { toRefs, watch, ref, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
-import { addDoc, doc, collection, onSnapshot, updateDoc, query, where, getDocs, limit, arrayUnion, setDoc } from 'firebase/firestore';
+import { addDoc, doc, collection, onSnapshot, updateDoc, query, where, getDocs, limit, arrayUnion, setDoc, writeBatch } from 'firebase/firestore';
 import { firestore, auth, app } from '../../firebase';
 import { inspectionApplicationsCollectionId, applicantId, attachmentsId, informationTypesId } from '../../constants';
 import DocumentUploader from './InspectionApplication/DocumentUploader.vue';
@@ -192,7 +192,21 @@ async function submit() {
     validationMessages.value = messages;
     return;
   }
-  await updateDoc(docRef.value, { status: 'submitted' });
+  const batch = writeBatch(firestore);
+  batch.update(docRef.value, { status: 'submitted' });
+  const mailDoc = doc(firestore, 'mail', applicationId.value);
+  batch.set(mailDoc, {
+    toUids: ['administrator'],
+    message: {
+      template: {
+        name: 'inspectionApplicationSubmitNotice',
+        data: {
+          applicantId: applicationId.value,
+        },
+      },
+    },
+  });
+  await batch.commit();
   router.push({ name: SubmittedInspectionApplication });
 }
 

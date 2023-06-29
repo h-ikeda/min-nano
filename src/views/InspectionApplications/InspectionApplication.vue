@@ -200,7 +200,7 @@ async function submit() {
     template: {
       name: 'inspectionApplicationSubmitNotice',
       data: {
-        applicantId: applicationId.value,
+        applicationId: applicationId.value,
       },
     },
   });

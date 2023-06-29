@@ -5,12 +5,12 @@ service cloud.firestore {
       allow create: if request.auth.uid == request.resource.data.applicant && request.resource.data.status != 'submitted'
       allow read: if request.auth.uid == resource.data.applicant
       function isValid() {
-        return getAfter(/mail/$(inspectionApplication)) != null
+        return getAfter(/databases/$(database)/documents/mail/$(inspectionApplication)) != null
       }
       allow update: if request.auth.uid == resource.data.applicant && resource.data.status != 'submitted' && (request.resource.data.status != 'submitted' || isValid())
     }
     match /mail/{inspectionApplication} {
-      allow create: if getAfter(/inspectionApplications/$(inspectionApplication)).data.status == 'submitted' && request.resource.toUids.hasOnly(['administrator'])
+      allow create: if getAfter(/databases/$(database)/documents/inspectionApplications/$(inspectionApplication)).data.status == 'submitted' && request.resource.data.toUids.hasOnly(['administrator'])
     }
   }
 }

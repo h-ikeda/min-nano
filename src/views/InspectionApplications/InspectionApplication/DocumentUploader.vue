@@ -2,7 +2,7 @@
   <label>
     {{ label }}
     <input type="file" @change="uploadDocuments" multiple :disabled="disabled">
-    <Spinner v-show="uploading" class="fixed inset-0 bg-white/80 backdrop-blur z-50"/>
+    <Spinner v-show="uploading" class="fixed inset-0 bg-white/80 backdrop-blur z-20"/>
   </label>
 </template>
 

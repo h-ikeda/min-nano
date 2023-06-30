@@ -9,19 +9,22 @@
 </template>
 
 <script setup>
-import { signInAnonymously, onAuthStateChanged, setPersistence, browserSessionPersistence } from '@firebase/auth';
+import { signInAnonymously, onAuthStateChanged, setPersistence, browserSessionPersistence, browserLocalPersistence } from '@firebase/auth';
 import { onBeforeUnmount, ref } from 'vue';
 import { auth } from './firebase';
 import Spinner from './components/Spinner.vue';
 
 const currentUser = ref(null);
 onBeforeUnmount(onAuthStateChanged(auth, (user) => {
+  if (!user) {
+    setPersistence(auth, browserSessionPersistence).then(() => {
+      signInAnonymously(auth);
+    });
+  } else if (!user.isAnonymous) {
+    setPersistence(auth, browserLocalPersistence);
+  }
   currentUser.value = user;
 }));
-
-setPersistence(auth, browserSessionPersistence).then(() => {
-  signInAnonymously(auth);
-});
 </script>
 
 <style>

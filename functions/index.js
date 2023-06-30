@@ -17,7 +17,7 @@ exports.cleanInspectionApplicationStorage = functions.firestore
     .onDelete((change, context) => {
       const {applicationId} = context.params;
       const bucket = getStorage().bucket();
-      bucket.deleteFiles({
+      return bucket.deleteFiles({
         prefix: `inspectionApplications/${applicationId}/`,
       });
     });

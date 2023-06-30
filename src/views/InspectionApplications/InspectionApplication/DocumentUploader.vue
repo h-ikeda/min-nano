@@ -2,7 +2,9 @@
   <label>
     {{ label }}
     <input type="file" @change="uploadDocuments" multiple :disabled="disabled">
-    <Spinner v-show="uploading" class="fixed inset-0 bg-white/80 backdrop-blur z-20"/>
+    <Transition>
+      <Spinner v-show="uploading" class="fixed inset-0 bg-white/80 backdrop-blur z-20"/>
+    </Transition>
   </label>
 </template>
 
@@ -70,5 +72,14 @@ input {
 }
 label {
   @apply cursor-pointer;
+}
+.v-leave-from {
+  @apply opacity-100;
+}
+.v-leave-to {
+  @apply opacity-0;
+}
+.v-leave-active {
+  @apply transition delay-300;
 }
 </style>

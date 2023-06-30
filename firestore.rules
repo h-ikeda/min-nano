@@ -3,7 +3,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     match /inspectionApplications/{inspectionApplication} {
       allow create: if request.auth.uid == request.resource.data.applicant && request.resource.data.status != 'submitted'
-      allow read: if request.auth.uid == resource.data.applicant
+      allow read: if request.auth.uid == resource.data.applicant || request.auth.token.admin == true
       function isValid() {
         return getAfter(/databases/$(database)/documents/mail/$(inspectionApplication)) != null
       }

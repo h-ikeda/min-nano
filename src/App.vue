@@ -1,5 +1,5 @@
 <template>
-  <h1 class="order-last text-center text-xs font-light py-2 bg-gray-200">
+  <h1 class="order-last text-center text-xs font-light py-2 bg-gray-200" :class="{ 'after:content-[\'*\']': currentUser && !currentUser.isAnonymous }">
     みんなの支え 二級建築士事務所
   </h1>
   <main class="grow min-h-0">

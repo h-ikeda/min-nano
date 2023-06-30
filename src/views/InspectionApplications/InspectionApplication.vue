@@ -132,6 +132,8 @@ watch(docRef, (r) => {
   unwatchApplicationData = onSnapshot(r, (result) => {
     applicationData.value = result.data();
     loading.value = false;
+  }, (error) => {
+    router.replace({ name: MenuInspectionApplications });
   });
 }, { immediate: true });
 

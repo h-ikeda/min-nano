@@ -1,4 +1,4 @@
-const {onDocumentDeleted} = require("firebase-functions/v2/firestore");
+const functions = require("firebase-functions");
 const {initializeApp} = require("firebase-admin/app");
 const {getStorage} = require("firebase-admin/storage");
 
@@ -12,13 +12,12 @@ const {getStorage} = require("firebase-admin/storage");
 
 initializeApp();
 
-exports.cleanInspectionApplicationStorage = onDocumentDeleted(
-    "inspectionApplications/{applicationId}",
-    async (event) => {
-      const {applicationId} = event.params;
-      getStorage()
-          .bucket()
-          .file(`inspectionApplications/${applicationId}`)
-          .delete();
-    },
-);
+exports.cleanInspectionApplicationStorage = functions.firestore
+    .document("inspectionApplications/{applicationId}")
+    .onDelete((change, context) => {
+      const {applicationId} = context.params;
+      const bucket = getStorage().bucket();
+      bucket.deleteFiles({
+        prefix: `inspectionApplications/${applicationId}/`,
+      });
+    });

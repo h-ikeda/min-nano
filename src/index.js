@@ -5,6 +5,11 @@ import workerSrc from './pdf.worker';
 import App from './App.vue';
 import { routes } from './routes';
 
+if (process.env.NODE_ENV === 'production' && location.hostname.toLowerCase().endsWith('.firebaseapp.com')) {
+  const { hostname } = location;
+  location.hostname = hostname.replace(/\.firebaseapp\.com$/i, '.web.app');
+}
+
 GlobalWorkerOptions.workerSrc = workerSrc;
 
 const app = createApp(App);

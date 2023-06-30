@@ -5,7 +5,7 @@ import { connectStorageEmulator, getStorage } from 'firebase/storage';
 
 export const app = initializeApp(process.env.PROJECT_ID === 'min-nano' ? {
   apiKey: "AIzaSyCdnB2GdSfBN0MPIKfZo6ECWPRKsE8bVes",
-  authDomain: "min-nano.firebaseapp.com",
+  authDomain: "min-nano.web.app",
   projectId: "min-nano",
   storageBucket: "min-nano.appspot.com",
   messagingSenderId: "479803681619",
@@ -13,7 +13,7 @@ export const app = initializeApp(process.env.PROJECT_ID === 'min-nano' ? {
   measurementId: "G-GD27QLYBMY"
 } : {
   apiKey: "AIzaSyD9w38rATAw-gY5_6u7qduHz26JqJQ45YY",
-  authDomain: "min-nano-test.firebaseapp.com",
+  authDomain: "min-nano-test.web.app",
   projectId: "min-nano-test",
   storageBucket: "min-nano-test.appspot.com",
   messagingSenderId: "608290323204",

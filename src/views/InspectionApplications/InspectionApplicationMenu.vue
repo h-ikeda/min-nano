@@ -21,7 +21,7 @@ let unwatch;
 
 onBeforeUnmount(onAuthStateChanged(auth, (user) => {
   if (unwatch) unwatch();
-  unwatch = onSnapshot(query(collection(firestore, inspectionApplicationsCollectionId), where(applicantId, '==', user.uid), where('status', '!=', 'created')), (snapshot) => {
+  unwatch = onSnapshot(query(collection(firestore, inspectionApplicationsCollectionId), where(applicantId, '==', user.uid), where('status', '!=', 'created'), limit(1)), (snapshot) => {
     listEnabled.value = !snapshot.empty;
   });
 }));

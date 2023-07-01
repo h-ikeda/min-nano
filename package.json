@@ -15,7 +15,7 @@
     "process": "^0.11.10",
     "tailwindcss": "^3.2.4",
     "vue": "^3.2.45",
-    "vue-router": "^4.1.6"
+    "vue-router": "^4.2.2"
   },
   "source": "src/index.html"
 }

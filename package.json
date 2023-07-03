@@ -6,7 +6,7 @@
   },
   "devDependencies": {
     "@material-design-icons/svg": "^0.14.4",
-    "@parcel/transformer-vue": "^2.8.2",
+    "@parcel/transformer-vue": "^2.9.3",
     "buffer": "^5.7.1",
     "firebase": "^9.17.1",
     "heroicons": "^2.0.13",

@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          cache: 'npm'
       - run: npm ci
       - run: npm run build
         env:
@@ -26,6 +29,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          cache: 'npm'
       - run: npm ci
         working-directory: ./functions
       - uses: w9jds/firebase-action@master
@@ -39,6 +45,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          cache: 'npm'
       - run: npm ci
         working-directory: ./functions
       - uses: w9jds/firebase-action@master

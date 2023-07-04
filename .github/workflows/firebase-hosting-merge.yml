@@ -2,7 +2,7 @@
 # https://github.com/firebase/firebase-tools
 
 name: Deploy to Firebase Hosting on merge
-'on':
+on:
   push:
     branches:
       - main
@@ -11,20 +11,48 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - run: npm ci && npm run build
+      - uses: actions/setup-node@v3
+        with:
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
         env:
           PROJECT_ID: min-nano
-      - run: npm ci
-        working-directory: ./functions
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
           firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIN_NANO }}'
           channelId: live
           projectId: min-nano
+
+  deploy_backends:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          cache: 'npm'
+      - run: npm ci
+        working-directory: ./functions
       - uses: w9jds/firebase-action@master
         with: 
           args: deploy --only firestore:rules,storage,functions
         env:
           GCP_SA_KEY: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIN_NANO }}'
           PROJECT_ID: min-nano
+
+  update_test_env:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v3
+        with:
+          cache: 'npm'
+      - run: npm ci
+        working-directory: ./functions
+      - uses: w9jds/firebase-action@master
+        with: 
+          args: deploy --only firestore:rules,storage,functions
+        env:
+          GCP_SA_KEY: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_MIN_NANO_TEST }}'
+          PROJECT_ID: min-nano-test

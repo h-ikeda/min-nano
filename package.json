@@ -15,7 +15,7 @@
     "pdfjs-dist": "^3.7.107",
     "process": "^0.11.10",
     "tailwindcss": "^3.3.2",
-    "vue": "^3.2.45",
+    "vue": "^3.3.4",
     "vue-router": "^4.2.2"
   },
   "source": "src/index.html"

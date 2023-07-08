@@ -13,7 +13,8 @@
         "plugin:jest/recommended"
     ],
     "rules": {
-        "indent": ["error", 3]
+        "indent": ["error", 3],
+        "semi": "error"
     },
     "overrides": [{
         "files": ["src/**"],

@@ -23,6 +23,8 @@ jobs:
         with:
           cache: 'npm'
       - run: npm ci
+      - run: npm ci
+        working-directory: functions
       - run: npm run lint
 
   build_and_preview:

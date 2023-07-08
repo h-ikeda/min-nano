@@ -1,0 +1,24 @@
+{
+    "root": true,
+    "env": {
+        "browser": true,
+        "node": true
+    },
+    "parserOptions": {
+        "ecmaVersion": "latest"
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:vue/vue3-recommended",
+        "plugin:jest/recommended"
+    ],
+    "rules": {
+        "indent": ["error", 3]
+    },
+    "overrides": [{
+        "files": ["src/**"],
+        "parserOptions": {
+            "sourceType": "module"
+        }
+    }]
+}

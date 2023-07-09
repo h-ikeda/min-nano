@@ -1,3 +1,4 @@
+/* eslint jest/expect-expect: ["warn", { "assertFunctionNames": ["assertSucceeds", "assertFails", "assert"] }] */
 const {
    initializeTestEnvironment, assertFails, assertSucceeds,
 } = require('@firebase/rules-unit-testing');
@@ -232,8 +233,8 @@ describe('propertiesコレクション', () => {
          title: '更新許可のあるユーザー',
          auth: updatableUser,
          allowance: should.deny,
-      }])('$titleはドキュメントを取得$allowance.title', async ({ auth, allowance }) => {
-         await allowance.assert(getDoc(doc(firebase.firestore(auth), collectionId, id)));
+      }])('$titleはドキュメントを取得$allowance.title', async ({ auth, allowance: { assert } }) => {
+         await assert(getDoc(doc(firebase.firestore(auth), collectionId, id)));
       });
    });
 
@@ -340,7 +341,8 @@ describe('propertiesコレクション', () => {
       test(`${field}フィールドが存在しないドキュメントを作成${undef.title}`, async () => {
          const data = fixture(user);
          delete otherKeys.reverse().reduce((acc, key) => acc[key], data)[lastKey];
-         await undef.assert(addDoc(collection(firebase.firestore(user), collectionId), data));
+         const { assert } = undef;
+         await assert(addDoc(collection(firebase.firestore(user), collectionId), data));
       });
 
       test.each(users)(`$titleは${field}フィールドを削除$allowance.title`, async ({ auth, allowance: { assert } }) => {

@@ -3,7 +3,7 @@
   "scripts": {
     "start": "firebase emulators:exec --only=auth,firestore,storage,functions parcel",
     "build": "parcel build",
-    "test": "firebase emulators:exec --only=firestore jest",
+    "test": "firebase emulators:exec --only=firestore,storage jest",
     "lint": "eslint ."
   },
   "devDependencies": {

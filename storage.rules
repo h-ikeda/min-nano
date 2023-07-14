@@ -13,5 +13,20 @@ service firebase.storage {
       allow create: if isApplicantAndNotSubmitted();
       allow read: if isApplicant() || request.auth.token.admin == true;
     }
+
+    match /property_documents/{propertyId}/{documentId}/{name} {
+      function has_permission(operation) {
+        return request.auth != null
+          && request.auth.uid in firestore.get(/databases/(default)/documents/properties/$(propertyId)/documents/$(documentId)).data.permissions[operation];
+      }
+      function name_declared() {
+        return name == firestore.get(/databases/(default)/documents/properties/$(propertyId)/documents/$(documentId)).data.name;
+      }
+
+      allow get: if has_permission('read')
+        && name_declared();
+      allow create: if has_permission('update')
+        && name_declared();
+    }
   }
 }

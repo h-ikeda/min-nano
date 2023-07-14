@@ -47,9 +47,7 @@ const should = {
 let firebase;
 
 beforeAll(async () => {
-   firebase = new TestFirebase(await initializeTestEnvironment({
-      projectId: 'test-unit-firestore',
-   }));
+   firebase = new TestFirebase(await initializeTestEnvironment({}));
 
    setLogLevel('error');
 });

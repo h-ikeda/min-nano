@@ -12,36 +12,36 @@ export const MenuInspectionApplications = 'MenuInspectionApplications';
 export const SubmittedInspectionApplication = 'SubmittedInspectionApplication';
 
 export const routes = [{
-  path: '/',
-  redirect: { name: MenuInspectionApplications },
-  children: [{
-    path: 'auth',
-    component: AuthUi,
-  }, {
-    path: 'inspection-applications',
-    component: InspectionApplications,
-    children: [{
-      path: '',
-      component: InspectionApplicationMenu,
-      name: MenuInspectionApplications,
-    }, {
-      path: 'list',
-      component: InspectionApplicationList,
-      name: ListInspectionApplications,
-    }, {
-      path: 'new',
-      component: InspectionApplication,
-      name: CreateInspectionApplication,
-    }, {
-      path: 'edit/:applicationId',
-      component: InspectionApplication,
-      props: true,
-      name: EditInspectionApplication,
-    }, {
-      path: 'submitted/:applicationId',
-      component: InspectionApplicationSubmitted,
-      props: true,
-      name: SubmittedInspectionApplication,
-    }],
-  }],
+   path: '/',
+   redirect: { name: MenuInspectionApplications },
+   children: [{
+      path: 'auth',
+      component: AuthUi,
+   }, {
+      path: 'inspection-applications',
+      component: InspectionApplications,
+      children: [{
+         path: '',
+         component: InspectionApplicationMenu,
+         name: MenuInspectionApplications,
+      }, {
+         path: 'list',
+         component: InspectionApplicationList,
+         name: ListInspectionApplications,
+      }, {
+         path: 'new',
+         component: InspectionApplication,
+         name: CreateInspectionApplication,
+      }, {
+         path: 'edit/:applicationId',
+         component: InspectionApplication,
+         props: true,
+         name: EditInspectionApplication,
+      }, {
+         path: 'submitted/:applicationId',
+         component: InspectionApplicationSubmitted,
+         props: true,
+         name: SubmittedInspectionApplication,
+      }],
+   }],
 }];

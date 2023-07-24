@@ -297,26 +297,31 @@ describe('propertiesコレクション', () => {
       }, {
          title: '更新許可のあるユーザー',
          auth: updatableUser,
-      }].flatMap((base) => [Object.assign(base, {
+      }].flatMap((base) => [{
+         ...base,
          conditionTitle: '条件指定なし',
          allowance: should.deny,
-      }), Object.assign(base, {
+      }, {
+         ...base,
          conditionTitle: 'ユーザー識別子が読み取り許可リストに含まれる条件',
          condition: where('permissions.read', 'array-contains', base.auth.uid),
          allowance: should.allow,
-      }), Object.assign(base, {
+      }, {
+         ...base,
          conditionTitle: '他のユーザー識別子が読み取り許可リストに含まれる条件',
          condition: where('permissions.read', 'array-contains', crypto.randomUUID().replace(/-/g, '')),
          allowance: should.deny,
-      }), Object.assign(base, {
+      }, {
+         ...base,
          conditionTitle: 'nullが読み取り許可リストに含まれる条件',
          condition: where('permissions.read', 'array-contains', null),
          allowance: should.deny,
-      }), Object.assign(base, {
+      }, {
+         ...base,
          conditionTitle: '空文字列が読み取り許可リストに含まれる条件',
          condition: where('permissions.read', 'array-contains', ''),
          allowance: should.deny,
-      })]))('$titleはドキュメントを$conditionTitleで検索$allowance.title', async ({ auth, allowance: { assert }, condition }) => {
+      }]))('$titleはドキュメントを$conditionTitleで検索$allowance.title', async ({ auth, allowance: { assert }, condition }) => {
          await assert(getDocs(query(collection(firebase.firestore(auth), collectionId), condition)));
       });
    });
@@ -461,6 +466,287 @@ describe('propertiesコレクション', () => {
          auth: null,
       }].flatMap((user) => customFields.map((field) => ({ field, ...user }))))('$titleは$fieldフィールドを作成できない', async ({ auth, field }) => {
          await assertFails(updateDoc(doc(firebase.firestore(auth), collectionId, id), { [field]: 'custom_data' }));
+      });
+   });
+
+   describe('documentsサブコレクション', () => {
+      const subCollectionId = 'documents';
+      const subReadableUser = { uid: crypto.randomUUID().replace(/-/g, '') };
+      const subUpdatableUser = { uid: crypto.randomUUID().replace(/-/g, '') };
+      
+      const subFixture = (auth) => ({
+         name: '新しい資料.pdf',
+         tags: ['customer_address'],
+         permissions: {
+            read: auth ? [auth.uid] : [],
+            update: auth ? [auth.uid] : [],
+         },
+      });
+   
+      let subId;
+   
+      beforeAll(async () => {
+         await firebase.withSecurityRulesDisabled(async (db) => {
+            ({ id: subId } = (await addDoc(collection(db, collectionId, id, subCollectionId), {
+               name: '既存資料.pdf',
+               tags: ['land_registration'],
+               permissions: {
+                  read: [user.uid, subReadableUser.uid],
+                  update: [user.uid, subUpdatableUser.uid],
+               },
+            })));
+         });
+      });
+
+      describe('ドキュメントの取得', () => {
+         test.each([{
+            title: '非認証ユーザー',
+            auth: null,
+            allowance: should.deny,
+         }, {
+            title: '読み取り権限のあるユーザー',
+            auth: subReadableUser,
+            allowance: should.allow,
+         }, {
+            title: '読み取り・更新権限のあるユーザー',
+            auth: user,
+            allowance: should.allow,
+         }, {
+            title: '更新権限のあるユーザー',
+            auth: subUpdatableUser,
+            allowance: should.deny,
+         }, {
+            title: '読み取り・更新権限のない認証ユーザー',
+            auth: anotherUser,
+            allowance: should.deny,
+         }])('$titleはドキュメントを取得$allowance.title', async ({ auth, allowance: { assert } }) => {
+            await assert(getDoc(doc(firebase.firestore(auth), collectionId, id, subCollectionId, subId)));
+         });
+      });
+
+      describe('ドキュメントの検索', () => {
+         test('非認証ユーザーはドキュメントを条件指定なしで検索できない', async () => {
+            await assertFails(getDocs(collection(firebase.firestore(null), collectionId, id, subCollectionId)));
+         });
+         test('非認証ユーザーはドキュメントをnullが読み取り許可リストに含まれる条件で検索できない', async () => {
+            await assertFails(getDocs(query(collection(firebase.firestore(null), collectionId, id, subCollectionId), where('permissions.read', 'array-contains', null))));
+         });
+         test('非認証ユーザーはドキュメントを空文字列が読み取り許可リストに含まれる条件で検索できない', async () => {
+            await assertFails(getDocs(query(collection(firebase.firestore(null), collectionId, id, subCollectionId), where('permissions.read', 'array-contains', ''))));
+         });
+
+         test.each([{
+            title: '読み取り許可のあるユーザー',
+            auth: subReadableUser,
+         }, {
+            title: '読み取り・更新許可のあるユーザー',
+            auth: user,
+         }, {
+            title: '読み取り・更新許可のない認証ユーザー',
+            auth: anotherUser,
+         }, {
+            title: '更新許可のあるユーザー',
+            auth: subUpdatableUser,
+         }].flatMap((base) => [{
+            ...base,
+            conditionTitle: '条件指定なし',
+            allowance: should.deny,
+         }, {
+            ...base,
+            conditionTitle: 'ユーザー識別子が読み取り許可リストに含まれる条件',
+            condition: where('permissions.read', 'array-contains', base.auth.uid),
+            allowance: should.allow,
+         }, {
+            ...base,
+            conditionTitle: '他のユーザー識別子が読み取り許可リストに含まれる条件',
+            condition: where('permissions.read', 'array-contains', crypto.randomUUID().replace(/-/g, '')),
+            allowance: should.deny,
+         }, {
+            ...base,
+            conditionTitle: 'nullが読み取り許可リストに含まれる条件',
+            condition: where('permissions.read', 'array-contains', null),
+            allowance: should.deny,
+         }, {
+            ...base,
+            conditionTitle: '空文字列が読み取り許可リストに含まれる条件',
+            condition: where('permissions.read', 'array-contains', ''),
+            allowance: should.deny,
+         }]))('$titleはドキュメントを$conditionTitleで検索$allowance.title', async ({ auth, allowance: { assert }, condition }) => {
+            await assert(getDocs(query(collection(firebase.firestore(auth), collectionId, id, subCollectionId), condition)));
+         });
+      });
+
+      describe('ドキュメントを作成', () => {
+         test.each([{
+            title: '非認証ユーザー',
+            auth: null,
+            allowance: should.deny,
+         }, {
+            title: '親ドキュメントの読み取り権限のあるユーザー',
+            auth: readableUser,
+            allowance: should.deny,
+         }, {
+            title: '親ドキュメントの読み取り・更新権限のあるユーザー',
+            auth: user,
+            allowance: should.allow,
+         }, {
+            title: '親ドキュメントの更新権限のあるユーザー',
+            auth: updatableUser,
+            allowance: should.allow,
+         }, {
+            title: '親ドキュメントの読み取り・更新権限のない認証ユーザー',
+            auth: anotherUser,
+            allowance: should.deny,
+         }])('$titleはドキュメントを作成$allowance.title', async ({ auth, allowance: { assert }}) => {
+            await assert(addDoc(collection(firebase.firestore(auth), collectionId, id, subCollectionId), subFixture(auth)));
+         });
+      });
+
+      describe('ドキュメントを更新', () => {
+         test.each([{
+            title: '非認証ユーザー',
+            auth: null,
+            allowance: should.deny,
+         }, {
+            title: '更新・読み取り許可のないユーザー',
+            auth: anotherUser,
+            allowance: should.deny,
+         }, {
+            title: '読み取り許可のあるユーザー',
+            auth: subReadableUser,
+            allowance: should.deny,
+         }, {
+            title: '更新許可のあるユーザー',
+            auth: subUpdatableUser,
+            allowance: should.allow,
+         }, {
+            title: '更新・読み取り許可のあるユーザー',
+            auth: user,
+            allowance: should.allow,
+         }])('$titleはドキュメントを更新$allowance.title', async ({ auth, allowance: { assert } }) => {
+            await assert(updateDoc(doc(firebase.firestore(auth), collectionId, id, subCollectionId, subId), {
+               tags: arrayUnion('customer_name'),
+               'permissions.read': arrayUnion(crypto.randomUUID().replace(/-/g, '')),
+               'permissions.update': arrayUnion(crypto.randomUUID().replace(/-/g, '')),
+            }));
+         });
+      });
+
+      describe.each([{
+         field: 'name',
+         undef: should.deny,
+         fixed: true,
+         fieldFixture: () => '新しい資料.jpeg',
+         type: '文字列',
+      }, {
+         field: 'permissions',
+         undef: should.deny,
+         fieldFixture: () => ({
+            read: [user.uid, subReadableUser.uid, crypto.randomUUID().replace(/-/g, '')],
+            update: [user.uid, subUpdatableUser.uid, crypto.randomUUID().replace(/-/g, '')],
+         }),
+         type: '連想配列',
+      }, {
+         field: 'permissions.read',
+         undef: should.deny,
+         fieldFixture: () => arrayUnion(crypto.randomUUID().replace(/-/g, '')),
+         type: ['配列', '空の配列'],
+      }, {
+         field: 'permissions.update',
+         undef: should.deny,
+         fieldFixture: () => arrayUnion(crypto.randomUUID().replace(/-/g, '')),
+         type: ['配列', '空の配列'],
+      }, {
+         field: 'tags',
+         undef: should.deny,
+         fieldFixture: () => arrayUnion('customer_tel'),
+         type: ['配列', '空の配列'],
+      }])('$fieldフィールド値の検証', ({ field, undef, type, fixed, fieldFixture }) => {
+
+         const users = [{
+            title: '更新・読み取り許可のあるユーザー',
+            auth: user,
+            allowance: should[fixed ? 'deny' : 'allow'],
+         }, {
+            title: '更新許可のあるユーザー',
+            auth: subUpdatableUser,
+            allowance: should[fixed ? 'deny' : 'allow'],
+         }, {
+            title: '読み取り許可のあるユーザー',
+            auth: subReadableUser,
+            allowance: should.deny,
+         }, {
+            title: '更新・読み取り許可のないユーザー',
+            auth: anotherUser,
+            allowance: should.deny,
+         }, {
+            title: '非認証ユーザー',
+            auth: null,
+            allowance: should.deny,
+         }];
+     
+         const invalidFieldValueGenerators = Object.entries(types).filter(([t]) => Array.isArray(type) ? !type.includes(t) : t !== type);
+
+         const [lastKey, ...otherKeys] = field.split('.').reverse();
+
+         test(`${field}フィールドが存在しないドキュメントを作成${undef.title}`, async () => {
+            const data = subFixture(user);
+            delete otherKeys.reverse().reduce((acc, key) => acc[key], data)[lastKey];
+            const { assert } = undef;
+            await assert(addDoc(collection(firebase.firestore(user), collectionId, id, subCollectionId), data));
+         });
+
+         test.each(users)(`$titleは${field}フィールドを削除${undef.title}`, async ({ auth }) => {
+            const { assert } = undef;
+            await assert(updateDoc(doc(firebase.firestore(auth), collectionId, id, subCollectionId, subId), { [field]: deleteField() }));
+         });
+
+         test.each(invalidFieldValueGenerators)(`${field}フィールドが%sのドキュメントは作成できない`, async (_, gen) => {
+            const data = subFixture(user);
+            otherKeys.reverse().reduce((acc, key) => acc[key], data)[lastKey] = gen();
+            await assertFails(addDoc(collection(firebase.firestore(user), collectionId, id, subCollectionId), data));
+         });
+
+         test.each(invalidFieldValueGenerators.flatMap(([testType, gen]) => users.map((user) => ({ user, testType, gen }))))(`$user.titleは${field}フィールドを$testTypeで更新できない`, async ({ user: { auth }, gen }) => {
+            await assertFails(updateDoc(doc(firebase.firestore(auth), collectionId, id, subCollectionId, subId), { [field]: gen() }));
+         });
+
+         test.each(users)(`$titleは${field}フィールドを更新${fixed ? 'できない' : 'できる'}`, async ({ auth, allowance: { assert } }) => {
+            await assert(updateDoc(doc(firebase.firestore(auth), collectionId, id, subCollectionId, subId), { [field]: fieldFixture() }));
+         });
+      });
+
+      describe('カスタムフィールドを作成', () => {
+         const customFields = [
+            'custom_field',
+            'permissions.custom_field',
+         ];
+
+         test.each(customFields)('%sフィールドを含むドキュメントは作成できない', async (field) => {
+            const [lastKey, ...keys] = field.split('.').reverse();
+            const data = subFixture(user);
+            keys.reverse().reduce((acc, key) => acc[key], data)[lastKey] = 'custom_data';
+            await assertFails(addDoc(collection(firebase.firestore(user), collectionId, id, subCollectionId), data));
+         });
+
+         test.each([{
+            title: '更新・読み取り許可のあるユーザー',
+            auth: user,
+         }, {
+            title: '更新許可のあるユーザー',
+            auth: subUpdatableUser,
+         }, {
+            title: '読み取り許可のあるユーザー',
+            auth: subReadableUser,
+         }, {
+            title: '更新・読み取り許可のないユーザー',
+            auth: anotherUser,
+         }, {
+            title: '非認証ユーザー',
+            auth: null,
+         }].flatMap((user) => customFields.map((field) => ({ field, ...user }))))('$titleは$fieldフィールドを作成できない', async ({ auth, field }) => {
+            await assertFails(updateDoc(doc(firebase.firestore(auth), collectionId, id, subCollectionId, subId), { [field]: 'custom_data' }));
+         });
       });
    });
 });

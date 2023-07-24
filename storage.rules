@@ -25,7 +25,8 @@ service firebase.storage {
 
       allow get: if has_permission('read')
         && name_declared();
-      allow create: if has_permission('update')
+      allow create: if resource == null
+        && has_permission('update')
         && name_declared();
     }
   }

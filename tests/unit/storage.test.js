@@ -1,7 +1,7 @@
 /* eslint jest/expect-expect: ["warn", { "assertFunctionNames": ["assertSucceeds", "assertFails", "assert"] }] */
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@firebase/rules-unit-testing");
 const { addDoc, collection, doc } = require("firebase/firestore");
-const { ref, uploadBytes } = require('firebase/storage');
+const { ref, uploadBytes, getDownloadURL } = require('firebase/storage');
 const crypto = require('crypto');
 
 let testEnv;
@@ -51,6 +51,8 @@ describe('property_documents', () => {
    const updatableUser = { uid: crypto.randomUUID().replace(/-/g, '') };
    const anotherUser = { uid: crypto.randomUUID().replace(/-/g, '') };
 
+   const fixture = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+
    let propertyId, documentId, absentDocumentId;
 
    beforeAll(async () => {
@@ -77,7 +79,10 @@ describe('property_documents', () => {
    });
 
    describe('オブジェクトをアップロード', () => {
-      const fixture = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
+
+      beforeEach(async () => {
+         await testEnv.clearStorage();
+      });
 
       test.each([{
          title: '非認証ユーザー',
@@ -107,13 +112,73 @@ describe('property_documents', () => {
          path: 'property_documents/$(propertyId)/$(absentDocumentId)/ファイル名.pdf',
          result: 'できない',
       }), Object.assign(base, {
-         target: '誤ったファイル名のパス',
+         target: 'に書き込まれたファイル名と異なるファイル名のパス',
          path: 'property_documents/$(propertyId)/$(documentId)/異なるファイル名.pdf',
          result: 'できない',
       })]))('$titleはfirestore$targetにオブジェクトをアップロード$result', async ({ auth, result, path }) => {
          const targetPath = path.replace('$(propertyId)', propertyId).replace('$(documentId)', documentId).replace('$(absentDocumentId', absentDocumentId);
          const assert = assertions[result];
          await assert(uploadBytes(ref(contexts.storage(auth), targetPath), fixture));
+      });
+   });
+
+   describe('オブジェクトを更新', () => {
+      beforeAll(async () => {
+         await testEnv.withSecurityRulesDisabled(async (context) => {
+            await uploadBytes(ref(context.storage(), `property_documents/${propertyId}/${documentId}/更新ファイル名.pdf`), fixture);
+         });
+      });
+
+      test.each([{
+         title: '非認証ユーザー',
+         auth: null,
+      }, {
+         title: '読み込み・更新権限のあるユーザー',
+         auth: user,
+      }, {
+         title: '更新権限のあるユーザー',
+         auth: updatableUser,
+      }, {
+         title: '読み込み権限のあるユーザー',
+         auth: readableUser,
+      }, {
+         title: '他の認証ユーザー',
+         auth: anotherUser,
+      }])('$titleはオブジェクトを上書きできない', async ({ auth }) => {
+         await assertFails(uploadBytes(ref(contexts.storage(auth), `property_documents/${propertyId}/${documentId}/更新ファイル名.pdf`), fixture));
+      });
+   });
+
+   describe('オブジェクトを取得', () => {
+      beforeAll(async () => {
+         await testEnv.withSecurityRulesDisabled(async (context) => {
+            await uploadBytes(ref(context.storage(), `property_documents/${propertyId}/${documentId}/取得ファイル名.pdf`), fixture);
+         });
+      });
+
+      test.each([{
+         title: '非認証ユーザー',
+         auth: null,
+         result: 'できない',
+      }, {
+         title: '読み込み・更新権限のあるユーザー',
+         auth: user,
+         result: 'できる',
+      }, {
+         title: '更新権限のあるユーザー',
+         auth: updatableUser,
+         result: 'できない',
+      }, {
+         title: '読み込み権限のあるユーザー',
+         auth: readableUser,
+         result: 'できる',
+      }, {
+         title: '他の認証ユーザー',
+         auth: anotherUser,
+         result: 'できない',
+      }])('$titleはオブジェクトを取得$result', async ({ auth, result }) => {
+         const assert = assertions[result];
+         await assert(getDownloadURL(ref(contexts.storage(auth), `property_documents/${propertyId}/${documentId}/取得ファイル名.pdf`)));
       });
    });
 });

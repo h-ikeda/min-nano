@@ -1,7 +1,7 @@
 /* eslint jest/expect-expect: ["warn", { "assertFunctionNames": ["assertSucceeds", "assertFails", "assert"] }] */
 const { initializeTestEnvironment, assertSucceeds, assertFails } = require("@firebase/rules-unit-testing");
 const { addDoc, collection, doc } = require("firebase/firestore");
-const { ref, uploadBytes, getDownloadURL } = require('firebase/storage');
+const { ref, uploadBytes, getDownloadURL, listAll } = require('firebase/storage');
 const crypto = require('crypto');
 
 let testEnv;
@@ -53,7 +53,7 @@ describe('property_documents', () => {
 
    const fixture = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x2c, 0x20, 0x77, 0x6f, 0x72, 0x6c, 0x64, 0x21]);
 
-   let propertyId, documentId, absentDocumentId;
+   let propertyId, absentDocumentId;
 
    beforeAll(async () => {
       await testEnv.withSecurityRulesDisabled(async (context) => {
@@ -64,24 +64,26 @@ describe('property_documents', () => {
                update: [user.uid, anotherUser.uid],
             },
          });
-         const document = await addDoc(collection(property, 'documents'), {
-            name: 'ファイル名.pdf',
-            tags: ['building_registration'],
-            permissions: {
-               read: [user.uid, readableUser.uid],
-               update: [user.uid, updatableUser.uid],
-            },
-         });
          propertyId = property.id;
-         documentId = document.id;
          absentDocumentId = doc(collection(property, 'documents')).id;
       });
    });
 
    describe('オブジェクトをアップロード', () => {
 
+      let id;
+      
       beforeEach(async () => {
-         await testEnv.clearStorage();
+         await testEnv.withSecurityRulesDisabled(async (context) => {
+            ({ id } = await addDoc(collection(context.firestore(), 'properties', propertyId, 'documents'), {
+               name: 'ファイル名.pdf',
+               tags: ['building_registration'],
+               permissions: {
+                  read: [user.uid, readableUser.uid],
+                  update: [user.uid, updatableUser.uid],
+               },
+            }));
+         });
       });
 
       test.each([{
@@ -104,28 +106,42 @@ describe('property_documents', () => {
          title: '他の認証ユーザー',
          auth: anotherUser,
          result: 'できない',
-      }].flatMap((base) => [Object.assign(base, {
+      }].flatMap((base) => [{
+         ...base,
          target: 'ドキュメント作成済みのパス',
          path: 'property_documents/$(propertyId)/$(documentId)/ファイル名.pdf',
-      }), Object.assign(base, {
+      }, {
+         ...base,
          target: 'ドキュメント未作成のパス',
          path: 'property_documents/$(propertyId)/$(absentDocumentId)/ファイル名.pdf',
          result: 'できない',
-      }), Object.assign(base, {
+      }, {
+         ...base,
          target: 'に書き込まれたファイル名と異なるファイル名のパス',
          path: 'property_documents/$(propertyId)/$(documentId)/異なるファイル名.pdf',
          result: 'できない',
-      })]))('$titleはfirestore$targetにオブジェクトをアップロード$result', async ({ auth, result, path }) => {
-         const targetPath = path.replace('$(propertyId)', propertyId).replace('$(documentId)', documentId).replace('$(absentDocumentId', absentDocumentId);
+      }]))('$titleはfirestore$targetにオブジェクトをアップロード$result', async ({ auth, result, path }) => {
+         const targetPath = path.replace('$(propertyId)', propertyId).replace('$(documentId)', id).replace('$(absentDocumentId)', absentDocumentId);
          const assert = assertions[result];
          await assert(uploadBytes(ref(contexts.storage(auth), targetPath), fixture));
       });
    });
 
    describe('オブジェクトを更新', () => {
+
+      let id;
+
       beforeAll(async () => {
          await testEnv.withSecurityRulesDisabled(async (context) => {
-            await uploadBytes(ref(context.storage(), `property_documents/${propertyId}/${documentId}/更新ファイル名.pdf`), fixture);
+            ({ id } = await addDoc(collection(context.firestore(), 'properties', propertyId, 'documents'), {
+               name: '更新ファイル名.pdf',
+               tags: ['building_registration'],
+               permissions: {
+                  read: [user.uid, readableUser.uid],
+                  update: [user.uid, updatableUser.uid],
+               },
+            }));
+            await uploadBytes(ref(context.storage(), `property_documents/${propertyId}/${id}/更新ファイル名.pdf`), fixture);
          });
       });
 
@@ -145,14 +161,25 @@ describe('property_documents', () => {
          title: '他の認証ユーザー',
          auth: anotherUser,
       }])('$titleはオブジェクトを上書きできない', async ({ auth }) => {
-         await assertFails(uploadBytes(ref(contexts.storage(auth), `property_documents/${propertyId}/${documentId}/更新ファイル名.pdf`), fixture));
+         await assertFails(uploadBytes(ref(contexts.storage(auth), `property_documents/${propertyId}/${id}/更新ファイル名.pdf`), fixture));
       });
    });
 
    describe('オブジェクトを取得', () => {
+
+      let id;
+
       beforeAll(async () => {
          await testEnv.withSecurityRulesDisabled(async (context) => {
-            await uploadBytes(ref(context.storage(), `property_documents/${propertyId}/${documentId}/取得ファイル名.pdf`), fixture);
+            ({ id } = await addDoc(collection(context.firestore(), 'properties', propertyId, 'documents'), {
+               name: '取得ファイル名.pdf',
+               tags: ['building_registration'],
+               permissions: {
+                  read: [user.uid, readableUser.uid],
+                  update: [user.uid, updatableUser.uid],
+               },
+            }));
+            await uploadBytes(ref(context.storage(), `property_documents/${propertyId}/${id}/取得ファイル名.pdf`), fixture);
          });
       });
 
@@ -178,7 +205,55 @@ describe('property_documents', () => {
          result: 'できない',
       }])('$titleはオブジェクトを取得$result', async ({ auth, result }) => {
          const assert = assertions[result];
-         await assert(getDownloadURL(ref(contexts.storage(auth), `property_documents/${propertyId}/${documentId}/取得ファイル名.pdf`)));
+         await assert(getDownloadURL(ref(contexts.storage(auth), `property_documents/${propertyId}/${id}/取得ファイル名.pdf`)));
+      });
+   });
+
+   describe('オブジェクトを検索', () => {
+
+      let id;
+
+      beforeAll(async () => {
+         await testEnv.withSecurityRulesDisabled(async (context) => {
+            ({ id } = await addDoc(collection(context.firestore(), 'properties', propertyId, 'documents'), {
+               name: '検索ファイル名.pdf',
+               tags: ['building_registration'],
+               permissions: {
+                  read: [user.uid, readableUser.uid],
+                  update: [user.uid, updatableUser.uid],
+               },
+            }));
+            await uploadBytes(ref(context.storage(), `property_documents/${propertyId}/${id}/検索ファイル名.pdf`), fixture);
+         });
+      });
+
+      test.each([{
+         title: '非認証ユーザー',
+         auth: null,
+      }, {
+         title: '読み込み・更新権限のあるユーザー',
+         auth: user,
+      }, {
+         title: '更新権限のあるユーザー',
+         auth: updatableUser,
+      }, {
+         title: '読み込み権限のあるユーザー',
+         auth: readableUser,
+      }, {
+         title: '他の認証ユーザー',
+         auth: anotherUser,
+      }].flatMap((base) => [{
+         ...base,
+         path: 'property_documents',
+      }, {
+         ...base,
+         path: 'property_documents/物件ID',
+      }, {
+         ...base,
+         path: 'property_documents/物件ID/資料ID',
+      }]))('$titleは$pathを検索できない', async ({ auth, path }) => {
+         const storage = contexts.storage(auth);
+         await assertFails(listAll(ref(storage, path.replace('物件ID', propertyId).replace('資料ID', id))));
       });
    });
 });

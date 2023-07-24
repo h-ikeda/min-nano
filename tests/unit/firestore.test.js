@@ -4,7 +4,7 @@ const {
 } = require('@firebase/rules-unit-testing');
 
 const {
-   doc, getDoc, addDoc, setDoc, collection, updateDoc, deleteDoc, setLogLevel, deleteField, arrayUnion, Timestamp,
+   doc, getDoc, addDoc, setDoc, collection, updateDoc, deleteDoc, setLogLevel, deleteField, arrayUnion, Timestamp, query, getDocs, where,
 } = require('firebase/firestore');
 
 const crypto = require('crypto');
@@ -44,11 +44,23 @@ const should = {
    },
 };
 
+const types = {
+   '文字列': () => 'abcdefgh',
+   '空文字列': () => '',
+   '空白のみの文字列': () => ' 　   ',
+   '数値': () => 1,
+   '配列': () => ['rstuvwxyz'],
+   '空の配列': () => [],
+   '真偽値': () => true,
+   '連想配列': () => ({}),
+   '日時': () => new Timestamp(),
+   'null': () => null,
+};
+
 let firebase;
 
 beforeAll(async () => {
    firebase = new TestFirebase(await initializeTestEnvironment({}));
-
    setLogLevel('error');
 });
 
@@ -91,6 +103,9 @@ describe('usersコレクション', () => {
    }, {
       title: 'カスタムフィールドを作成',
       operation: (db) => updateDoc(doc(db, collectionId, user.uid), { custom_ield: 'custom_data' }),
+   }, {
+      title: 'ドキュメントを検索',
+      operation: (db) => getDocs(collection(db, collectionId)),
    }])('$title', ({ title, operation }) => {
       test.each([{
          title: '非認証ユーザー',
@@ -142,8 +157,31 @@ describe('inspectorsコレクション', () => {
          title: '中古住宅適合証明技術者',
          auth: flat35Inspector,
          allowance: should.allow,
-      }])('$titleはドキュメントを取得$allowance.title', async ({ auth, allowance: { assert } }) => {
+      }])('$titleはドキュメントを取得できない', async ({ auth, allowance: { assert } }) => {
          await assert(getDoc(doc(firebase.firestore(auth), collectionId, simpleInspector.uid)));
+      });
+   });
+
+   describe('ドキュメントを検索', () => {
+      test.each([{
+         title: '非認証ユーザー',
+         auth: null,
+         allowance: should.deny,
+      }, {
+         title: '認証ユーザー',
+         auth: user,
+         allowance: should.allow,
+      }, {
+         title: '既存住宅状況調査技術者',
+         auth: simpleInspector,
+         allowance: should.allow,
+      }, {
+         title: '中古住宅適合証明技術者',
+         auth: flat35Inspector,
+         allowance: should.allow,
+      }])('$titleはドキュメントを検索$allowance.title', async ({ auth, allowance: { assert } }) => {
+         await assert(getDocs(collection(firebase.firestore(auth), collectionId)));
+         await assert(getDocs(query(collection(firebase.firestore(auth), collectionId), where('acceptables', 'array-contains-any', ['flat35_used', 'inspection_simple']))));
       });
    });
 
@@ -236,6 +274,53 @@ describe('propertiesコレクション', () => {
       });
    });
 
+   describe('ドキュメントを検索', () => {
+      test('非認証ユーザーはドキュメントを条件指定なしで検索できない', async () => {
+         await assertFails(getDocs(collection(firebase.firestore(null), collectionId)));
+      });
+      test('非認証ユーザーはドキュメントをnullが読み取り許可リストに含まれる条件で検索できない', async () => {
+         await assertFails(getDocs(query(collection(firebase.firestore(null), collectionId), where('permissions.read', 'array-contains', null))));
+      });
+      test('非認証ユーザーはドキュメントを空文字列が読み取り許可リストに含まれる条件で検索できない', async () => {
+         await assertFails(getDocs(query(collection(firebase.firestore(null), collectionId), where('permissions.read', 'array-contains', ''))));
+      });
+
+      test.each([{
+         title: '読み取り許可のあるユーザー',
+         auth: readableUser,
+      }, {
+         title: '読み取り・更新許可のあるユーザー',
+         auth: user,
+      }, {
+         title: '読み取り・更新許可のない認証ユーザー',
+         auth: anotherUser,
+      }, {
+         title: '更新許可のあるユーザー',
+         auth: updatableUser,
+      }].flatMap((base) => [Object.assign(base, {
+         conditionTitle: '条件指定なし',
+         allowance: should.deny,
+      }), Object.assign(base, {
+         conditionTitle: 'ユーザー識別子が読み取り許可リストに含まれる条件',
+         condition: where('permissions.read', 'array-contains', base.auth.uid),
+         allowance: should.allow,
+      }), Object.assign(base, {
+         conditionTitle: '他のユーザー識別子が読み取り許可リストに含まれる条件',
+         condition: where('permissions.read', 'array-contains', crypto.randomUUID().replace(/-/g, '')),
+         allowance: should.deny,
+      }), Object.assign(base, {
+         conditionTitle: 'nullが読み取り許可リストに含まれる条件',
+         condition: where('permissions.read', 'array-contains', null),
+         allowance: should.deny,
+      }), Object.assign(base, {
+         conditionTitle: '空文字列が読み取り許可リストに含まれる条件',
+         condition: where('permissions.read', 'array-contains', ''),
+         allowance: should.deny,
+      })]))('$titleはドキュメントを$conditionTitleで検索$allowance.title', async ({ auth, allowance: { assert }, condition }) => {
+         await assert(getDocs(query(collection(firebase.firestore(auth), collectionId), condition)));
+      });
+   });
+
    describe('ドキュメントを作成', () => {
       test.each([{
          title: '非認証ユーザー',
@@ -280,19 +365,6 @@ describe('propertiesコレクション', () => {
       });
    });
 
-   const types = {
-      '文字列': () => 'abcdefgh',
-      '空文字列': () => '',
-      '空白のみの文字列': () => ' 　   ',
-      '数値': () => 1,
-      '配列': () => ['rstuvwxyz'],
-      '空の配列': () => [],
-      '真偽値': () => true,
-      '連想配列': () => ({}),
-      '日時': () => new Timestamp(),
-      'null': () => null,
-   };
-  
    describe.each([{
       field: 'name',
       undef: should.deny,
